@@ -41,9 +41,10 @@ SignalHistoryView::SignalHistoryView(QWidget *parent)
     , m_eventDelegate(new SignalHistoryDelegate(this))
     , m_eventScrollBar(nullptr)
 {
-    setDeferredResizeMode(0, QHeaderView::Interactive);
+    setDeferredResizeMode(0, QHeaderView::ResizeToContents);
     setDeferredResizeMode(1, QHeaderView::Interactive);
-    setDeferredResizeMode(2, QHeaderView::Stretch);
+    setDeferredResizeMode(2, QHeaderView::Interactive);
+    setDeferredResizeMode(3, QHeaderView::Stretch);
 
     setItemDelegateForColumn(SignalHistoryModel::EventColumn, m_eventDelegate);
 
