@@ -55,8 +55,6 @@ signals:
     void delegateVisibleIntervalChanged(qint64 interval);
 
 protected:
-    bool viewportEvent(QEvent *event) override;
-
     int eventColumnPosition() const;
     int eventColumnWidth() const;
 
