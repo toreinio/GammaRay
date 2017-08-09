@@ -53,6 +53,7 @@
 #include <QUrl>
 #include <QStringList>
 #include <QVariant>
+#include <QProcessEnvironment>
 
 #include <csignal>
 
@@ -154,6 +155,31 @@ static bool startLauncher()
     return proc.exitCode() == 0;
 }
 
+
+static int startInjector(const LaunchOptions &options)
+{
+    const QString launcherPath = LauncherFinder::findLauncher(LauncherFinder::Injector, options.probeABI());
+
+    auto arguments = qApp->arguments();
+    arguments.pop_front();
+    auto env = options.processEnvironment();
+    const auto prepend = [&env](const QString &key, const QString& val) {
+        const QString path = val + QLatin1Char(';') + env.value(key, QString());
+        env.insert(key,  path);
+    };
+    prepend(QLatin1String("Path"), options.workingDirectory());
+    prepend(QLatin1String("QT_PLUGIN_PATH"), options.workingDirectory());
+
+    QProcess proc;
+    proc.setProcessChannelMode(QProcess::ForwardedChannels);
+    proc.setEnvironment(env.toStringList());
+    proc.setWorkingDirectory(options.workingDirectory());
+    proc.start(launcherPath, arguments);
+    if (!proc.waitForFinished(-1))
+        return -1;
+    return proc.exitCode();
+}
+
 static QUrl urlFromUserInput(const QString &s)
 {
     QUrl url(s);
@@ -215,6 +241,8 @@ int main(int argc, char **argv)
         }
         if ((arg == QLatin1String("-p") || arg == QLatin1String("--pid")) && !args.isEmpty()) {
             options.setPid(args.takeFirst().toInt());
+            const auto qtCorePath = ProbeABIDetector().qtCoreForProcess(options.pid());
+            options.setWorkingDirectory(qtCorePath.mid(0, qtCorePath.lastIndexOf("\\")));
             continue;
         }
         if (arg == QLatin1String("-h") || arg == QLatin1String("--help")) {
@@ -337,6 +365,12 @@ int main(int argc, char **argv)
         }
         options.setProbeABI(availableProbes.first());
     }
+
+#ifdef Q_OS_WIN
+    if (!app.applicationFilePath().endsWith(options.probeABI().id() + ".exe", Qt::CaseInsensitive)) {
+        return startInjector(options);
+    }
+#endif
 
     // use a local connection when starting gui locally with this launcher
     if (!options.probeSettings().contains(QStringLiteral("ServerAddress").toUtf8())
