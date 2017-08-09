@@ -246,8 +246,10 @@ if(NOT GAMMARAY_PROBE_ONLY_BUILD)
     gammaray_add_test(probesettingstest probesettingstest.cpp)
     target_link_libraries(probesettingstest gammaray_launcher gammaray_common ${QT_QTCORE_LIBRARIES} ${QT_QTGUI_LIBRARIES})
 
-    gammaray_add_test(launcheruiiptest launcheruiiptest.cpp)
-    target_link_libraries(launcheruiiptest gammaray_launcher_ui gammaray_common ${QT_QTGUI_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
+    if (GAMMARAY_BUILD_UI)
+        gammaray_add_test(launcheruiiptest launcheruiiptest.cpp)
+        target_link_libraries(launcheruiiptest gammaray_launcher_ui gammaray_common ${QT_QTGUI_LIBRARIES} ${QT_QTNETWORK_LIBRARIES})
+    endif()
 
     if(GAMMARAY_BUILD_UI AND NOT GAMMARAY_PROBE_ONLY_BUILD)
         gammaray_add_test(remotemodeltest
