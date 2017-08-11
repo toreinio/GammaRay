@@ -51,3 +51,8 @@ environment:
     - TARGET: mingw
     - TARGET: msvc2015x64
 
+deploy:
+    - provider: Environment
+      name: kdab
+      #on:
+       #   branch: master
