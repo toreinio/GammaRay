@@ -31,6 +31,10 @@
 
 #include <core/toolfactory.h>
 
+QT_BEGIN_NAMESPACE
+class QWindow;
+QT_END_NAMESPACE
+
 namespace GammaRay {
 class GuiSupport : public QObject
 {
@@ -38,11 +42,17 @@ class GuiSupport : public QObject
 public:
     explicit GuiSupport(ProbeInterface *probe, QObject *parent = nullptr);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    bool eventFilter(QObject *watched, QEvent *event);
+#endif
+
 private:
     void registerMetaTypes();
     void registerVariantHandler();
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     void discoverObjects();
+    static void updateWindowTitle(QWindow *w);
+    static void updateWindowIcon(QWindow *w);
 #endif
 
 private:

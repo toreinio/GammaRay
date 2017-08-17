@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/gammaray">
+        <file>images/GammaRay-32x32.png</file>
+        <file>images/GammaRay-128x128.png</file>
+    </qresource>
+</RCC>

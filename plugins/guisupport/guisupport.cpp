@@ -43,8 +43,10 @@
 #include <QWindow>
 #endif
 
+#include <QIcon>
 #include <QFont>
 #include <QPaintDevice>
+#include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPen>
@@ -66,6 +68,12 @@ GuiSupport::GuiSupport(GammaRay::ProbeInterface *probe, QObject *parent)
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     connect(m_probe->probe(), SIGNAL(objectCreated(QObject*)), SLOT(objectCreated(QObject*)));
+
+    m_probe->installGlobalEventFilter(this);
+    for (auto w : qApp->topLevelWindows()) {
+        updateWindowIcon(w);
+        updateWindowTitle(w);
+    }
 #endif
 }
 
@@ -360,6 +368,35 @@ void GuiSupport::registerVariantHandler()
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+void GuiSupport::updateWindowTitle(QWindow *w)
+{
+    auto suffix = tr(" (Injected by GammaRay)");
+    if (w->title().endsWith(suffix))
+        return;
+    w->setTitle(w->title() + suffix);
+}
+
+void GuiSupport::updateWindowIcon(QWindow *w)
+{
+    static const QIcon gammarayIcon(QLatin1String(":/gammaray/images/GammaRay-128x128.png"));
+    static const auto theme = QLatin1String("gammaray");
+
+    QIcon oldIcon = w->icon();
+    if (oldIcon.isNull() || oldIcon.themeName() == theme) {
+        return;
+    }
+    QPixmap pix(oldIcon.pixmap(oldIcon.actualSize({128, 128})));
+    {
+        QPainter p(&pix);
+        QPixmap gammarayPixmap = gammarayIcon.pixmap(gammarayIcon.actualSize(pix.size()/2));
+        QSize size = gammarayPixmap.size();
+        p.drawPixmap(pix.rect().bottomRight() - QPoint(size.width(), size.height())  , gammarayPixmap);
+    }
+    QIcon newIcon(pix);
+    newIcon.setThemeName(theme);
+    w->setIcon(newIcon);
+}
+
 void GuiSupport::discoverObjects()
 {
     foreach (QWindow *window, qApp->topLevelWindows())
@@ -370,6 +407,24 @@ void GuiSupport::objectCreated(QObject *object)
 {
     if (qobject_cast<QGuiApplication *>(object))
         discoverObjects();
+}
+
+bool GuiSupport::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::WindowTitleChange) {
+        if (auto w = qobject_cast<QWindow*>(watched)) {
+            if (w->isTopLevel()) {
+                updateWindowTitle(w);
+            }
+        }
+    } else if(event->type() == QEvent::WindowIconChange) {
+        if (auto w = qobject_cast<QWindow*>(watched)) {
+            if (w->isTopLevel()) {
+                updateWindowIcon(w);
+            }
+        }
+    }
+    return QObject::eventFilter(watched, event);
 }
 #endif
 
